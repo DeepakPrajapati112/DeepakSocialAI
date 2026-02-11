@@ -1,4 +1,4 @@
-# app.py - DEEPAK'S SOCIAL MEDIA AI ASSISTANT (FIXED UNBOUNDLOCALERROR)
+# app.py - DEEPAK'S SOCIAL MEDIA AI ASSISTANT (RENDER.COM PRODUCTION READY)
 import os
 import json
 import uuid
@@ -11,18 +11,20 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Initialize Flask app
-app = Flask(__name__)
+# Initialize Flask app - PRODUCTION SETUP
+app = Flask(__name__, 
+            template_folder='templates',  # templates folder specify karna jaruri hai
+            static_folder='static')       # static files ke liye
 app.secret_key = os.urandom(24)
 CORS(app)
 
 class DeepakSocialAI:
     def __init__(self):
-        # Get API key from .env
-        self.api_key = os.getenv("GROQ_API_KEY")
+        # Get API key from environment - Render.com ke liye
+        self.api_key = os.getenv("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
         
         if not self.api_key:
-            raise ValueError("❌ GROQ_API_KEY not found in .env file")
+            raise ValueError("❌ GROQ_API_KEY not found in environment variables")
         
         # Configuration
         self.app_name = "Deepak's Social Media AI"
@@ -44,13 +46,12 @@ class DeepakSocialAI:
         
         print(f"✅ {self.app_name} initialized!")
         print(f"👨‍💻 Developer: {self.developer}")
-        print(f"⚡ Default Model: {self.current_model} (Fast)")
+        print(f"⚡ Default Model: {self.current_model}")
     
     def detect_social_media_request(self, message):
         """Improved social media detection"""
         message_lower = message.lower()
         
-        # Check for social media keywords with better matching
         social_keywords = {
             'twitter': ['twitter', 'tweet', 'x.com', 'x post', 'on twitter', 'viral tweet'],
             'linkedin': ['linkedin', 'linked in', 'professional post', 'on linkedin', 'linkedin post'],
@@ -66,8 +67,26 @@ class DeepakSocialAI:
         
         return list(set(detected_platforms))
     
+    def format_for_social_media(self, content, platform):
+        """Format content for specific social media platform"""
+        if platform == 'twitter':
+            if len(content) > 275:
+                content = content[:272] + "..."
+            hashtags = " #AI #Tech #DeepakAI"
+            return content + hashtags
+            
+        elif platform == 'linkedin':
+            hashtags = " #ArtificialIntelligence #Technology #Innovation #Career"
+            return f"{content}\n\n🔹 Powered by Deepak's AI Assistant{hashtags}"
+            
+        elif platform == 'instagram':
+            hashtags = " #AI #Tech #Innovation #Future #DeepakAI"
+            return f"✨ {content} ✨\n\n👇 Comment your thoughts below!{hashtags}"
+        
+        return content
+    
     def chat(self, message, session_id="default", stream=False):
-        """Send message to Groq API with improved prompts - FIXED UNBOUNDLOCALERROR"""
+        """Send message to Groq API"""
         try:
             # Get or create session
             if session_id not in self.sessions:
@@ -77,13 +96,12 @@ class DeepakSocialAI:
                 }
             
             session_data = self.sessions[session_id]
-            # Use a different variable name to avoid conflict
             chat_history = session_data['chats']
             
             # Detect social media request
             platforms = self.detect_social_media_request(message)
             
-            # Prepare system message with updated knowledge
+            # Prepare system message
             current_year = datetime.now().year
             current_date = datetime.now().strftime("%B %d, %Y")
             
@@ -98,20 +116,17 @@ Make content current and relevant to {current_year} trends.
 Format each post exactly like this:
 1. [First tweet/post]
 2. [Second tweet/post] 
-3. [Third tweet/post]
-
-Make sure to always output numbered posts. Don't add extra explanations."""
+3. [Third tweet/post]"""
             else:
                 system_message = f"""You are {self.app_name}, created by {self.developer}. 
 Current date: {current_date}, Year: {current_year}.
 You are helpful, intelligent, and provide accurate, up-to-date information.
-If asked about recent events, provide information up to {current_year}.
-Be concise and clear in your responses. Always respond with content."""
+Be concise and clear in your responses."""
             
             # Prepare messages
             messages = [{"role": "system", "content": system_message}]
             
-            # Add history (last 10 messages)
+            # Add history
             for h in chat_history[-10:]:
                 messages.append({"role": h["role"], "content": h["content"]})
             
@@ -133,7 +148,7 @@ Be concise and clear in your responses. Always respond with content."""
             }
             
             if stream:
-                # Streaming response - FIXED: Use nonlocal variable correctly
+                # Streaming response
                 response = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers=headers,
@@ -144,10 +159,6 @@ Be concise and clear in your responses. Always respond with content."""
                 
                 def generate():
                     full_response = ""
-                    # Use the session_data and chat_history from outer scope
-                    nonlocal session_data
-                    nonlocal chat_history
-                    
                     try:
                         for line in response.iter_lines():
                             if line:
@@ -170,34 +181,29 @@ Be concise and clear in your responses. Always respond with content."""
                     
                     except Exception as e:
                         print(f"Streaming error: {e}")
-                        yield f"\n\n[Error: {str(e)}]"
                     
                     finally:
                         # Save to history
-                        try:
-                            chat_history.append({
-                                "role": "user", 
-                                "content": message,
-                                "timestamp": datetime.now().isoformat(),
-                                "platforms": platforms
-                            })
-                            
-                            chat_history.append({
-                                "role": "assistant", 
-                                "content": full_response,
-                                "timestamp": datetime.now().isoformat(),
-                                "platforms": platforms,
-                                "message_id": str(uuid.uuid4())
-                            })
-                            
-                            # Keep history manageable
-                            if len(chat_history) > 50:
-                                chat_history = chat_history[-50:]
-                            
-                            session_data['chats'] = chat_history
-                            self.sessions[session_id] = session_data
-                        except Exception as e:
-                            print(f"Error saving to history: {e}")
+                        chat_history.append({
+                            "role": "user", 
+                            "content": message,
+                            "timestamp": datetime.now().isoformat(),
+                            "platforms": platforms
+                        })
+                        
+                        chat_history.append({
+                            "role": "assistant", 
+                            "content": full_response,
+                            "timestamp": datetime.now().isoformat(),
+                            "platforms": platforms,
+                            "message_id": str(uuid.uuid4())
+                        })
+                        
+                        if len(chat_history) > 50:
+                            chat_history = chat_history[-50:]
+                        
+                        session_data['chats'] = chat_history
+                        self.sessions[session_id] = session_data
                 
                 return {
                     "success": True,
@@ -209,15 +215,12 @@ Be concise and clear in your responses. Always respond with content."""
             
             else:
                 # Non-streaming response
-                print(f"Sending request to Groq API with model: {self.current_model}")
                 response = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers=headers,
                     json=data,
                     timeout=60
                 )
-                
-                print(f"API Response Status: {response.status_code}")
                 
                 if response.status_code == 200:
                     result = response.json()
@@ -241,7 +244,6 @@ Be concise and clear in your responses. Always respond with content."""
                             "message_id": str(uuid.uuid4())
                         })
                         
-                        # Keep history manageable
                         if len(chat_history) > 50:
                             chat_history = chat_history[-50:]
                         
@@ -256,27 +258,12 @@ Be concise and clear in your responses. Always respond with content."""
                             "message_id": str(uuid.uuid4())
                         }
                     else:
-                        print(f"No choices in response: {result}")
-                        return {
-                            "success": False,
-                            "error": "No response from AI model"
-                        }
+                        return {"success": False, "error": "No response from AI model"}
                 else:
-                    error_text = response.text[:200] if response.text else "No error text"
-                    print(f"API Error {response.status_code}: {error_text}")
-                    return {
-                        "success": False,
-                        "error": f"API Error: {response.status_code}"
-                    }
+                    return {"success": False, "error": f"API Error: {response.status_code}"}
         
         except Exception as e:
-            print(f"Exception in chat: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
     
     def get_chat_history(self, session_id="default"):
         """Get formatted chat history"""
@@ -284,7 +271,6 @@ Be concise and clear in your responses. Always respond with content."""
             session_data = self.sessions[session_id]
             chats = session_data['chats']
             
-            # Group chats by date
             grouped_chats = {}
             for chat in chats:
                 if 'timestamp' in chat:
@@ -324,9 +310,8 @@ Be concise and clear in your responses. Always respond with content."""
     def switch_model(self, model_key):
         """Switch to different model"""
         if model_key in self.models:
-            old_model = self.current_model
             self.current_model = self.models[model_key]
-            print(f"🔄 Model switched from {old_model} to {self.current_model}")
+            print(f"🔄 Model switched to {self.current_model}")
             return True
         return False
     
@@ -344,8 +329,33 @@ assistant = DeepakSocialAI()
 
 @app.route('/')
 def home():
-    """Main page"""
-    return render_template('index.html')
+    """Main page - Render.com production ready"""
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        print(f"Template error: {e}")
+        # Fallback HTML agar template na mile
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Deepak's Social AI</title>
+            <style>
+                body { background: #0f172a; color: white; font-family: Arial; 
+                       display: flex; justify-content: center; align-items: center; height: 100vh; }
+                .container { text-align: center; }
+                h1 { color: #60a5fa; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Deepak's Social Media AI Assistant</h1>
+                <p>Loading application...</p>
+                <script>setTimeout(() => location.reload(), 2000);</script>
+            </div>
+        </body>
+        </html>
+        """
 
 @app.route('/api/chat', methods=['POST'])
 def chat_api():
@@ -357,47 +367,28 @@ def chat_api():
         if not message:
             return jsonify({"success": False, "error": "Message is empty"})
         
-        print(f"📩 Received message: {message[:50]}...")
+        session_id = session.get('session_id', str(uuid.uuid4()))
+        session['session_id'] = session_id
         
-        # Get session ID
-        if 'session_id' not in session:
-            session['session_id'] = str(uuid.uuid4())
-        session_id = session['session_id']
-        
-        # Get streaming preference (default to False for testing)
         stream = data.get('stream', False)
-        
-        print(f"📡 Session: {session_id}, Streaming: {stream}")
-        
-        # Get response
         result = assistant.chat(message, session_id, stream)
         
         if stream and 'generator' in result:
-            # Streaming response
             def generate():
                 platforms = result.get("platforms", [])
-                yield f'data: {json.dumps({"type": "start", "platforms": platforms, "success": True})}\n\n'
+                yield f'data: {json.dumps({"type": "start", "platforms": platforms})}\n\n'
                 
-                try:
-                    for chunk in result['generator']:
-                        if chunk:
-                            yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
-                except Exception as e:
-                    print(f"Error in stream generator: {e}")
-                    yield f'data: {json.dumps({"type": "chunk", "content": f"\\n\\n[Streaming Error: {str(e)}]"})}\n\n'
+                for chunk in result['generator']:
+                    if chunk:
+                        yield f'data: {json.dumps({"type": "chunk", "content": chunk})}\n\n'
                 
-                yield f'data: {json.dumps({"type": "end", "platforms": platforms, "success": True})}\n\n'
-                yield f'data: [DONE]\n\n'
+                yield f'data: {json.dumps({"type": "end", "platforms": platforms})}\n\n'
             
             return Response(generate(), mimetype='text/event-stream')
         else:
-            # Non-streaming response
             return jsonify(result)
     
     except Exception as e:
-        print(f"❌ Error in chat_api: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)})
 
 @app.route('/api/history', methods=['GET'])
@@ -407,26 +398,6 @@ def get_history():
         session_id = session.get('session_id', 'default')
         history = assistant.get_chat_history(session_id)
         return jsonify(history)
-    
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-
-@app.route('/api/edit', methods=['POST'])
-def edit_message():
-    """Edit a message"""
-    try:
-        data = request.get_json()
-        message_id = data.get('message_id')
-        new_content = data.get('content', '').strip()
-        
-        if not message_id or not new_content:
-            return jsonify({"success": False, "error": "Missing parameters"})
-        
-        session_id = session.get('session_id', 'default')
-        result = assistant.edit_message(session_id, message_id, new_content)
-        
-        return jsonify(result)
-    
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -481,33 +452,39 @@ def clear_history_api():
         success = assistant.clear_history(session_id)
         
         if success:
-            return jsonify({
-                "success": True, 
-                "message": "Chat history cleared"
-            })
+            return jsonify({"success": True, "message": "Chat history cleared"})
         else:
             return jsonify({"success": False, "error": "Failed to clear history"})
     
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+@app.route('/api/edit', methods=['POST'])
+def edit_message():
+    """Edit a message"""
+    try:
+        data = request.get_json()
+        message_id = data.get('message_id')
+        new_content = data.get('content', '').strip()
+        
+        if not message_id or not new_content:
+            return jsonify({"success": False, "error": "Missing parameters"})
+        
+        session_id = session.get('session_id', 'default')
+        result = assistant.edit_message(session_id, message_id, new_content)
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route('/health')
 def health_check():
-    """Health check"""
+    """Health check for Render.com"""
     return jsonify({
         "status": "healthy",
         "service": assistant.app_name,
         "developer": assistant.developer,
         "version": assistant.version,
-        "current_model": assistant.current_model
-    })
-
-@app.route('/test')
-def test():
-    """Test endpoint"""
-    return jsonify({
-        "success": True,
-        "message": "Deepak's AI Assistant is running",
         "timestamp": datetime.now().isoformat()
     })
 
@@ -519,25 +496,9 @@ if __name__ == '__main__':
     print("=" * 60)
     print(f"👨‍💻 Developer: {assistant.developer}")
     print(f"⚡ Default Model: {assistant.current_model}")
-    print(f"📅 Knowledge: Up to {datetime.now().year}")
-    #====print("📡 Open: http://localhost:5000")=======
     print("=" * 60)
-
-    # Production settings
+    
+    # Production settings for Render.com
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') == 'development'
     app.run(host='0.0.0.0', port=port, debug=debug)
-    
-    #======= Production के लिए - Render.com पर 0.0.0.0 use करें==============
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
-
-    
-    # Test the API key
-    if assistant.api_key:
-        print(f"✅ GROQ API Key loaded: {assistant.api_key[:10]}...")
-    else:
-        print("❌ GROQ API Key NOT loaded!")
-    
-
-    app.run(debug=True, host='0.0.0.0', port=5000)
