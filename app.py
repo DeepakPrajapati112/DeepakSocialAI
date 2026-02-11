@@ -520,8 +520,12 @@ if __name__ == '__main__':
     print(f"👨‍💻 Developer: {assistant.developer}")
     print(f"⚡ Default Model: {assistant.current_model}")
     print(f"📅 Knowledge: Up to {datetime.now().year}")
-    print("📡 Open: http://localhost:5000")
+    #====print("📡 Open: http://localhost:5000")=======
     print("=" * 60)
+    #======= Production के लिए - Render.com पर 0.0.0.0 use करें==============
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+
     
     # Test the API key
     if assistant.api_key:
@@ -529,4 +533,5 @@ if __name__ == '__main__':
     else:
         print("❌ GROQ API Key NOT loaded!")
     
+
     app.run(debug=True, host='0.0.0.0', port=5000)
