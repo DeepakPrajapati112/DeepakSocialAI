@@ -522,6 +522,12 @@ if __name__ == '__main__':
     print(f"📅 Knowledge: Up to {datetime.now().year}")
     #====print("📡 Open: http://localhost:5000")=======
     print("=" * 60)
+
+    # Production settings
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    app.run(host='0.0.0.0', port=port, debug=debug)
+    
     #======= Production के लिए - Render.com पर 0.0.0.0 use करें==============
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
