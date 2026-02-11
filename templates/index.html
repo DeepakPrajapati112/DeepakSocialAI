@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepak's Social Media AI Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+        
+        /* ===== RESIZABLE SIDEBAR ===== */
+        .sidebar {
+            width: 320px; /* Default width */
+            min-width: 250px;
+            max-width: 500px;
+            background: rgba(15, 23, 42, 0.95);
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden; /* Changed from auto to hidden */
+            position: relative;
+            resize: horizontal;
+        }
+        
+        /* Resize handle */
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 8px;
+            height: 100%;
+            cursor: col-resize;
+            background: transparent;
+            z-index: 10;
+        }
+        
+        .resize-handle:hover {
+            background: rgba(96, 165, 250, 0.3);
+        }
+        
+        .resize-handle:active {
+            background: rgba(96, 165, 250, 0.5);
+        }
+        
+        .sidebar-header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        
+        .app-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .developer-tag {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 15px;
+        }
+        
+        .model-status {
+            font-size: 14px;
+            color: #60a5fa;
+            padding: 6px 12px;
+            background: rgba(96, 165, 250, 0.1);
+            border-radius: 12px;
+            display: inline-block;
+        }
+        
+        .history-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0; /* Important for flex scrolling */
+        }
+        
+        .history-section h3 {
+            font-size: 16px;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .history-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .history-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(51, 65, 85, 0.3);
+            border: 1px solid #475569;
+            color: #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .history-btn:hover {
+            background: rgba(51, 65, 85, 0.5);
+        }
+        
+        #historyList {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            min-height: 0; /* Important for scrolling */
+        }
+        
+        .date-group {
+            margin-bottom: 25px;
+        }
+        
+        .date-header {
+            font-size: 14px;
+            color: #60a5fa;
+            padding: 5px 10px;
+            background: rgba(96, 165, 250, 0.1);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        
+        .date-header:hover {
+            background: rgba(96, 165, 250, 0.2);
+        }
+        
+        .chat-items {
+            max-height: none; /* Removed fixed height */
+            overflow-y: visible; /* Changed to visible */
+        }
+        
+        .chat-item {
+            padding: 12px 15px;
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .chat-item:hover {
+            background: rgba(51, 65, 85, 0.5);
+            border-left-color: #60a5fa;
+        }
+        
+        .chat-item.active {
+            background: rgba(96, 165, 250, 0.15);
+            border-left-color: #60a5fa;
+        }
+        
+        .chat-preview {
+            font-size: 14px;
+            color: #cbd5e1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .chat-time {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+        
+        .clear-history-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .clear-history-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        
+        /* ===== MAIN CHAT ===== */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+        
+        .chat-header {
+            padding: 20px 30px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .chat-info h2 {
+            font-size: 20px;
+            color: #e2e8f0;
+        }
+        
+        .chat-info p {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+        
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .model-selector select {
+            padding: 10px 15px;
+            background: rgba(51, 65, 85, 0.5);
+            color: white;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 200px;
+            cursor: pointer;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #0f172a;
+        }
+        
+        .message {
+            max-width: 75%;
+            margin-bottom: 25px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            margin-left: auto;
+        }
+        
+        .message-content {
+            padding: 20px;
+            border-radius: 15px;
+            position: relative;
+            line-height: 1.6;
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .message.ai .message-content {
+            background: rgba(30, 41, 59, 0.8);
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+            text-align: right;
+        }
+        
+        .edit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #cbd5e1;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .message.user:hover .edit-btn {
+            display: block;
+        }
+        
+        /* Social Media Posts */
+        .social-posts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .social-post {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .social-post:hover {
+            border-color: #60a5fa;
+            box-shadow: 0 4px 20px rgba(96, 165, 250, 0.1);
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .post-number {
+            display: inline-block;
+            background: #60a5fa;
+            color: #0f172a;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .post-platform {
+            font-size: 12px;
+            color: #94a3b8;
+            background: rgba(148, 163, 184, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .post-content {
+            margin: 15px 0;
+            font-size: 15px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #475569;
+        }
+        
+        .post-char-count {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .social-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .social-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        
+        .twitter-btn {
+            background: #1da1f2;
+            color: white;
+        }
+        
+        .linkedin-btn {
+            background: #0077b5;
+            color: white;
+        }
+        
+        .instagram-btn {
+            background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+            color: white;
+        }
+        
+        .social-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Input Area */
+        .input-area {
+            padding: 20px 30px;
+            background: rgba(15, 23, 42, 0.9);
+            border-top: 1px solid #334155;
+            flex-shrink: 0;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 15px;
+        }
+        
+        textarea {
+            flex: 1;
+            padding: 18px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            resize: none;
+            min-height: 60px;
+            font-family: inherit;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+        
+        .send-btn {
+            padding: 0 30px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(96, 165, 250, 0.3);
+        }
+        
+        /* Typing Indicator */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+            color: #94a3b8;
+        }
+        
+        .typing-indicator.active {
+            display: flex;
+        }
+        
+        .dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .dots span {
+            width: 8px;
+            height: 8px;
+            background: #60a5fa;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .dots span:nth-child(1) { animation-delay: -0.32s; }
+        .dots span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: #1e293b;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid #475569;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            color: #e2e8f0;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .edit-textarea {
+            width: 100%;
+            padding: 15px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            min-height: 100px;
+            margin-bottom: 20px;
+            font-family: inherit;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #60a5fa;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+                min-width: 250px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100% !important;
+                height: 250px;
+                order: 2;
+                resize: none;
+            }
+            
+            .main-chat {
+                order: 1;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .model-selector {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .model-selector select {
+                min-width: 100%;
+            }
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #10b981;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar - Chat History -->
+        <div class="sidebar" id="sidebar">
+            <div class="resize-handle" id="resizeHandle"></div>
+            
+            <div class="sidebar-header">
+                <div class="app-title">
+                    <i class="fas fa-robot"></i>
+                    Deepak's Social AI
+                </div>
+                <div class="developer-tag">
+                    Created by Deepak • v3.0
+                </div>
+                <div class="model-status" id="currentModelStatus">
+                    <i class="fas fa-bolt"></i> Loading...
+                </div>
+            </div>
+            
+            <div class="history-section">
+                <h3><i class="fas fa-history"></i> Chat History</h3>
+                
+                <div class="history-controls">
+                    <button class="history-btn" onclick="toggleHistory('all')">
+                        <i class="fas fa-list"></i> All
+                    </button>
+                    <button class="history-btn" onclick="toggleHistory('today')">
+                        <i class="fas fa-calendar-day"></i> Today
+                    </button>
+                    <button class="history-btn" onclick="refreshHistory()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                
+                <div id="historyList">
+                    <!-- History will be loaded here -->
+                    <div class="chat-item">
+                        <div class="chat-preview">Welcome to Deepak's AI Assistant!</div>
+                        <div class="chat-time">Just now</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="clear-history-btn" onclick="clearHistory()">
+                <i class="fas fa-trash"></i> Clear All History
+            </button>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="main-chat">
+            <!-- Header -->
+            <div class="chat-header">
+                <div class="chat-info">
+                    <h2>Deepak's Social Media AI Assistant</h2>
+                    <p>Ask for Twitter, LinkedIn, or Instagram posts to get posting buttons!</p>
+                </div>
+                
+                <div class="model-selector">
+                    <select id="modelSelect">
+                        <option value="">Select AI Model</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    <div class="message-content">
+                        <h3>👋 Welcome to Deepak's Social Media AI Assistant v3.0!</h3>
+                        <p>I can help you with:</p>
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li>Regular conversations and questions</li>
+                            <li>Creating viral social media posts</li>
+                            <li><strong>Individual tweet posting</strong> - Each tweet has its own post buttons!</li>
+                            <li>Editing your previous messages</li>
+                            <li>Resizable sidebar for chat history</li>
+                        </ul>
+                        <p style="margin-top: 15px; color: #60a5fa;">
+                            💡 <strong>Try saying:</strong> "Create 3 viral tweets about AI" or 
+                            "Make LinkedIn posts about technology"
+                        </p>
+                    </div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Type your message here... Example: 'Create 3 viral tweets about AI'"
+                        rows="1"
+                    ></textarea>
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span>Deepak's AI is thinking...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Message Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Message</h3>
+                <button class="close-modal" onclick="closeEditModal()">×</button>
+            </div>
+            <textarea class="edit-textarea" id="editTextarea" placeholder="Edit your message..."></textarea>
+            <div class="modal-buttons">
+                <button style="background: #475569; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;" onclick="closeEditModal()">
+                    Cancel
+                </button>
+                <button style="background: #60a5fa; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="saveEditedMessage()">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Deepak's Social Media AI Assistant - SCROLL FIXED VERSION
+        class DeepakSocialAI {
+            constructor() {
+                this.currentMessageId = null;
+                this.socialPlatforms = [];
+                this.isProcessing = false;
+                this.sidebarWidth = 320;
+                this.initialize();
+            }
+            
+            initialize() {
+                this.loadModels();
+                this.setupEventListeners();
+                this.loadChatHistory();
+                this.setupResizableSidebar();
+                
+                console.log("✅ Deepak's Social Media AI Assistant v3.0 initialized!");
+            }
+            
+            setupResizableSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const resizeHandle = document.getElementById('resizeHandle');
+                let isResizing = false;
+                
+                resizeHandle.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    document.body.style.cursor = 'col-resize';
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    
+                    const newWidth = e.clientX;
+                    if (newWidth > 250 && newWidth < 500) {
+                        sidebar.style.width = newWidth + 'px';
+                        this.sidebarWidth = newWidth;
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        document.body.style.cursor = 'default';
+                    }
+                });
+                
+                sidebar.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        localStorage.setItem('deepakAI_sidebarWidth', this.sidebarWidth);
+                    }
+                });
+                
+                const savedWidth = localStorage.getItem('deepakAI_sidebarWidth');
+                if (savedWidth) {
+                    sidebar.style.width = savedWidth + 'px';
+                    this.sidebarWidth = parseInt(savedWidth);
+                }
+            }
+            
+            setupEventListeners() {
+                const textarea = document.getElementById('messageInput');
+                const sendButton = document.querySelector('.send-btn');
+                
+                textarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
+                });
+                
+                sendButton.addEventListener('click', () => this.sendMessage());
+                
+                document.getElementById('modelSelect').addEventListener('change', (e) => {
+                    this.switchModel(e.target.value);
+                });
+                
+                window.sendMessage = () => this.sendMessage();
+                window.clearHistory = () => this.clearHistory();
+                window.closeEditModal = () => this.closeEditModal();
+                window.saveEditedMessage = () => this.saveEditedMessage();
+            }
+            
+            async loadModels() {
+                try {
+                    const response = await fetch('/api/models');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('modelSelect');
+                        select.innerHTML = '<option value="">Select AI Model</option>';
+                        
+                        data.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = model.name;
+                            if (model.value === data.current_model) {
+                                option.selected = true;
+                                document.getElementById('currentModelStatus').innerHTML = 
+                                    `<i class="fas fa-bolt"></i> ${model.name}`;
+                            }
+                            select.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading models:', error);
+                }
+            }
+            
+            async loadChatHistory() {
+                try {
+                    const response = await fetch('/api/history');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.displayHistory(data.grouped_chats);
+                    }
+                } catch (error) {
+                    console.error('Error loading history:', error);
+                }
+            }
+            
+            displayHistory(groupedChats) {
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '';
+                
+                if (!groupedChats || Object.keys(groupedChats).length === 0) {
+                    historyList.innerHTML = '<div class="chat-item">No chat history yet</div>';
+                    return;
+                }
+                
+                const dates = Object.keys(groupedChats).sort().reverse();
+                
+                dates.forEach(date => {
+                    const dateGroup = document.createElement('div');
+                    dateGroup.className = 'date-group';
+                    
+                    const dateHeader = document.createElement('div');
+                    dateHeader.className = 'date-header';
+                    dateHeader.innerHTML = `
+                        <span>${this.formatDate(date)}</span>
+                        <span>${groupedChats[date].length} chats</span>
+                    `;
+                    
+                    dateHeader.onclick = () => {
+                        const chatItems = dateHeader.nextElementSibling;
+                        if (chatItems) {
+                            chatItems.style.display = chatItems.style.display === 'none' ? 'block' : 'none';
+                        }
+                    };
+                    
+                    dateGroup.appendChild(dateHeader);
+                    
+                    const chatItems = document.createElement('div');
+                    chatItems.className = 'chat-items';
+                    
+                    const aiResponses = groupedChats[date].filter(chat => chat.role === 'assistant');
+                    
+                    aiResponses.slice(0, 10).forEach(chat => { // Increased to 10 items
+                        const chatItem = document.createElement('div');
+                        chatItem.className = 'chat-item';
+                        chatItem.onclick = () => this.loadChat(chat.message_id);
+                        
+                        const preview = chat.content ? 
+                            chat.content.substring(0, 100) + (chat.content.length > 100 ? '...' : '') : 
+                            'Empty message';
+                        const time = chat.timestamp ? 
+                            new Date(chat.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
+                            '';
+                        
+                        chatItem.innerHTML = `
+                            <div class="chat-preview">${this.escapeHtml(preview)}</div>
+                            <div class="chat-time">${time}</div>
+                        `;
+                        
+                        chatItems.appendChild(chatItem);
+                    });
+                    
+                    dateGroup.appendChild(chatItems);
+                    historyList.appendChild(dateGroup);
+                });
+                
+                // Scroll to top after loading
+                setTimeout(() => {
+                    historyList.scrollTop = 0;
+                }, 100);
+            }
+            
+            formatDate(dateString) {
+                try {
+                    const date = new Date(dateString);
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    
+                    if (date.toDateString() === today.toDateString()) {
+                        return 'Today';
+                    } else if (date.toDateString() === yesterday.toDateString()) {
+                        return 'Yesterday';
+                    } else {
+                        return date.toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
+                    }
+                } catch (e) {
+                    return dateString;
+                }
+            }
+            
+            async sendMessage() {
+                if (this.isProcessing) {
+                    return;
+                }
+                
+                const input = document.getElementById('messageInput');
+                const message = input.value.trim();
+                
+                if (!message) {
+                    this.showNotification('Please enter a message', 'warning');
+                    return;
+                }
+                
+                this.isProcessing = true;
+                
+                this.addUserMessage(message);
+                
+                input.value = '';
+                input.style.height = 'auto';
+                input.focus();
+                
+                this.showTyping();
+                
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            message: message,
+                            stream: false
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const platforms = data.platforms || [];
+                        this.updateAIMessageWithResponse(data.response, platforms);
+                        this.showNotification('Response received', 'success');
+                    } else {
+                        this.addErrorMessage(data.error || 'Unknown error');
+                        this.showNotification('Failed to get response', 'error');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.addErrorMessage(`Error: ${error.message}`);
+                    this.showNotification('Failed to get response', 'error');
+                } finally {
+                    this.isProcessing = false;
+                    this.hideTyping();
+                    this.loadChatHistory();
+                }
+            }
+            
+            addUserMessage(content) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageId = 'user_' + Date.now();
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message user';
+                messageDiv.id = messageId;
+                
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${this.escapeHtml(content)}
+                        <button class="edit-btn" onclick="deepakAI.editMessage('${messageId}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </div>
+                    <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                `;
+                
+                chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+            
+            addAIMessage(content, isSocialRequest = false) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageId = 'ai_' + Date.now();
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message ai';
+                messageDiv.id = messageId;
+                
+                if (isSocialRequest) {
+                    messageDiv.innerHTML = `
+                        <div class="message-content">
+                            <div class="social-posts-container" id="posts-container-${messageId}">
+                                <!-- Posts will be added here -->
+                            </div>
+                        </div>
+                        <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="message-content">
+                            ${this.escapeHtml(content)}
+                        </div>
+                        <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                    `;
+                }
+                
+                chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+                
+                return messageDiv;
+            }
+            
+            updateAIMessageWithResponse(content, platforms) {
+                const messageDiv = this.addAIMessage('', platforms.length > 0);
+                this.updateAIMessage(messageDiv, content, platforms);
+            }
+            
+            updateAIMessage(messageDiv, content, platforms) {
+                if (platforms && platforms.length > 0) {
+                    const posts = this.extractPosts(content);
+                    const postsContainer = messageDiv.querySelector('.social-posts-container');
+                    
+                    if (postsContainer) {
+                        if (posts && posts.length > 0) {
+                            postsContainer.innerHTML = '';
+                            
+                            posts.forEach((post, index) => {
+                                const postDiv = document.createElement('div');
+                                postDiv.className = 'social-post';
+                                postDiv.id = `post-${Date.now()}-${index}`;
+                                
+                                const formattedPost = this.formatForPlatform(post, platforms[0]);
+                                const charCount = formattedPost.length;
+                                const platformName = platforms[0].charAt(0).toUpperCase() + platforms[0].slice(1);
+                                
+                                postDiv.innerHTML = `
+                                    <div class="post-header">
+                                        <div class="post-number">${index + 1}</div>
+                                        <div class="post-platform">${platformName}</div>
+                                    </div>
+                                    <div class="post-content">${this.escapeHtml(formattedPost).replace(/\n/g, '<br>')}</div>
+                                    <div class="post-footer">
+                                        <div class="post-char-count">
+                                            ${charCount} characters
+                                        </div>
+                                        <div class="social-buttons">
+                                            ${platforms.includes('twitter') ? `
+                                                <button class="social-btn twitter-btn" onclick="postToTwitter(this, ${index})">
+                                                    <i class="fab fa-twitter"></i> Post on Twitter
+                                                </button>
+                                            ` : ''}
+                                            ${platforms.includes('linkedin') ? `
+                                                <button class="social-btn linkedin-btn" onclick="postToLinkedIn(this, ${index})">
+                                                    <i class="fab fa-linkedin"></i> Post on LinkedIn
+                                                </button>
+                                            ` : ''}
+                                            ${platforms.includes('instagram') ? `
+                                                <button class="social-btn instagram-btn" onclick="postToInstagram(this, ${index})">
+                                                    <i class="fab fa-instagram"></i> Post on Instagram
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                postDiv.dataset.content = formattedPost;
+                                postsContainer.appendChild(postDiv);
+                            });
+                        } else {
+                            postsContainer.innerHTML = `<div class="post-content">${this.escapeHtml(content).replace(/\n/g, '<br>')}</div>`;
+                        }
+                    }
+                } else {
+                    const messageContent = messageDiv.querySelector('.message-content');
+                    if (messageContent) {
+                        messageContent.innerHTML = this.escapeHtml(content).replace(/\n/g, '<br>');
+                    }
+                }
+                
+                this.scrollToBottom();
+            }
+            
+            extractPosts(content) {
+                const posts = [];
+                
+                const lines = content.split('\n');
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (/^\d+[\.\)]\s+/.test(trimmed)) {
+                        const post = trimmed.replace(/^\d+[\.\)]\s+/, '');
+                        if (post.length > 10) {
+                            posts.push(post);
+                        }
+                    }
+                }
+                
+                if (posts.length === 0) {
+                    const paragraphs = content.split('\n\n');
+                    posts.push(...paragraphs.filter(p => p.trim().length > 20).slice(0, 3));
+                }
+                
+                return posts;
+            }
+            
+            formatForPlatform(content, platform) {
+                let cleanContent = content.replace(/^\d+[\.\)]\s*/, '').trim();
+                
+                let maxLength = 275;
+                if (platform === 'twitter') maxLength = 275;
+                if (platform === 'linkedin') maxLength = 3000;
+                if (platform === 'instagram') maxLength = 2200;
+                
+                if (cleanContent.length > maxLength) {
+                    cleanContent = cleanContent.substring(0, maxLength - 3) + '...';
+                }
+                
+                const currentYear = new Date().getFullYear();
+                const hashtags = ` #AI #Tech #DeepakAI #${currentYear}`;
+                
+                switch(platform) {
+                    case 'twitter':
+                        return cleanContent + hashtags;
+                    case 'linkedin':
+                        return `${cleanContent}\n\n🔹 Created with Deepak's AI Assistant${hashtags}`;
+                    case 'instagram':
+                        return `✨ ${cleanContent} ✨\n\n💭 What are your thoughts?${hashtags}`;
+                    default:
+                        return cleanContent;
+                }
+            }
+            
+            addErrorMessage(content) {
+                const chatMessages = document.getElementById('chatMessages');
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message ai';
+                
+                messageDiv.innerHTML = `
+                    <div class="message-content" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+                        <span style="color: #fca5a5;">❌ ${this.escapeHtml(content)}</span>
+                    </div>
+                    <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                `;
+                
+                chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+            
+            scrollToBottom() {
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            showTyping() {
+                document.getElementById('typingIndicator').classList.add('active');
+            }
+            
+            hideTyping() {
+                document.getElementById('typingIndicator').classList.remove('active');
+            }
+            
+            async switchModel(modelKey) {
+                if (!modelKey) return;
+                
+                this.showNotification(`Switching to ${modelKey}...`, 'info');
+                
+                try {
+                    const response = await fetch('/api/switch-model', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ model: modelKey })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        document.getElementById('currentModelStatus').innerHTML = 
+                            `<i class="fas fa-bolt"></i> ${data.current_model_name}`;
+                        this.showNotification(`Switched to ${modelKey}`, 'success');
+                    } else {
+                        this.showNotification(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('Failed to switch model', 'error');
+                }
+            }
+            
+            async clearHistory() {
+                if (confirm('Are you sure you want to clear all chat history?')) {
+                    try {
+                        const response = await fetch('/api/clear', {method: 'POST'});
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            document.getElementById('chatMessages').innerHTML = `
+                                <div class="message ai">
+                                    <div class="message-content">
+                                        <h3>✨ Chat History Cleared!</h3>
+                                        <p>Start a new conversation with Deepak's AI Assistant!</p>
+                                    </div>
+                                    <div class="message-time">Just now</div>
+                                </div>
+                            `;
+                            
+                            this.loadChatHistory();
+                            this.showNotification('Chat history cleared', 'success');
+                        }
+                    } catch (error) {
+                        this.showNotification('Failed to clear history', 'error');
+                    }
+                }
+            }
+            
+            editMessage(messageId) {
+                const messageDiv = document.getElementById(messageId);
+                if (!messageDiv) return;
+                
+                const contentElement = messageDiv.querySelector('.message-content');
+                if (!contentElement) return;
+                
+                let content = contentElement.textContent;
+                if (content.includes('Edit')) {
+                    content = content.replace('Edit', '').trim();
+                }
+                
+                this.currentMessageId = messageId;
+                
+                document.getElementById('editTextarea').value = content;
+                document.getElementById('editModal').style.display = 'flex';
+            }
+            
+            async saveEditedMessage() {
+                const newContent = document.getElementById('editTextarea').value.trim();
+                
+                if (!newContent) {
+                    this.showNotification('Message cannot be empty', 'warning');
+                    return;
+                }
+                
+                const messageDiv = document.getElementById(this.currentMessageId);
+                if (messageDiv) {
+                    const messageContent = messageDiv.querySelector('.message-content');
+                    if (messageContent) {
+                        messageContent.innerHTML = `
+                            ${this.escapeHtml(newContent)}
+                            <button class="edit-btn" onclick="deepakAI.editMessage('${this.currentMessageId}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        `;
+                    }
+                }
+                
+                try {
+                    const response = await fetch('/api/edit', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            message_id: this.currentMessageId,
+                            content: newContent
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.showNotification('Message updated', 'success');
+                    }
+                } catch (error) {
+                    console.error('Error saving edit:', error);
+                }
+                
+                this.closeEditModal();
+            }
+            
+            closeEditModal() {
+                document.getElementById('editModal').style.display = 'none';
+                this.currentMessageId = null;
+            }
+            
+            loadChat(messageId) {
+                this.showNotification('Loading chat...', 'info');
+            }
+            
+            showNotification(message, type) {
+                const existingNotifications = document.querySelectorAll('.notification');
+                existingNotifications.forEach(n => n.remove());
+                
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.background = type === 'error' ? '#dc2626' : 
+                                               type === 'warning' ? '#f59e0b' : 
+                                               type === 'info' ? '#3b82f6' : '#10b981';
+                
+                notification.textContent = `🤖 ${message}`;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+        
+        // Social Media Posting Functions
+        function postToTwitter(button, postIndex) {
+            const postDiv = button.closest('.social-post');
+            if (!postDiv) return;
+            
+            const content = postDiv.dataset.content || postDiv.querySelector('.post-content')?.textContent || '';
+            
+            const tweetText = encodeURIComponent(content.substring(0, 280));
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
+            
+            window.open(twitterUrl, '_blank', 'width=600,height=400');
+            deepakAI.showNotification(`Posting Tweet ${postIndex + 1} to Twitter...`, 'info');
+        }
+        
+        function postToLinkedIn(button, postIndex) {
+            const postDiv = button.closest('.social-post');
+            if (!postDiv) return;
+            
+            const content = postDiv.dataset.content || postDiv.querySelector('.post-content')?.textContent || '';
+            
+            const linkedinUrl = `https://www.linkedin.com/feed/`;
+            window.open(linkedinUrl, '_blank');
+            deepakAI.showNotification(`Opening LinkedIn for Post ${postIndex + 1}`, 'info');
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(content)
+                    .then(() => {
+                        setTimeout(() => {
+                            alert(`📋 Post ${postIndex + 1} content copied to clipboard! Paste it on LinkedIn.`);
+                        }, 1000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy: ', err);
+                    });
+            } else {
+                alert(`Please copy this text: \n\n${content.substring(0, 200)}...`);
+            }
+        }
+        
+        function postToInstagram(button, postIndex) {
+            const postDiv = button.closest('.social-post');
+            if (!postDiv) return;
+            
+            const content = postDiv.dataset.content || postDiv.querySelector('.post-content')?.textContent || '';
+            
+            const instagramUrl = `https://www.instagram.com/`;
+            window.open(instagramUrl, '_blank');
+            deepakAI.showNotification(`Opening Instagram for Post ${postIndex + 1}`, 'info');
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(content)
+                    .then(() => {
+                        setTimeout(() => {
+                            alert(`📋 Post ${postIndex + 1} content copied to clipboard! Paste it in your Instagram caption.`);
+                        }, 1000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy: ', err);
+                    });
+            } else {
+                alert(`Please copy this text: \n\n${content.substring(0, 200)}...`);
+            }
+        }
+        
+        // Helper functions
+        function toggleHistory(filter) {
+            deepakAI.showNotification(`Showing ${filter} history`, 'info');
+        }
+        
+        function refreshHistory() {
+            deepakAI.loadChatHistory();
+            deepakAI.showNotification('History refreshed', 'success');
+        }
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            window.deepakAI = new DeepakSocialAI();
+            window.postToTwitter = postToTwitter;
+            window.postToLinkedIn = postToLinkedIn;
+            window.postToInstagram = postToInstagram;
+            window.toggleHistory = toggleHistory;
+            window.refreshHistory = refreshHistory;
+        });
+    </script>
+</body>
+
+</html>
